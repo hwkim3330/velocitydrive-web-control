@@ -27,12 +27,12 @@ class MUP1Protocol {
      */
     calculateChecksum(data) {
         let sum = 0;
+        
+        // Process as 16-bit words
         for (let i = 0; i < data.length; i += 2) {
-            if (i + 1 < data.length) {
-                sum += (data[i] << 8) | data[i + 1];
-            } else {
-                sum += data[i] << 8;
-            }
+            const hi = data[i];
+            const lo = (i + 1 < data.length) ? data[i + 1] : 0;
+            sum += (hi << 8) | lo;
         }
         
         // Add carry bits
@@ -49,13 +49,21 @@ class MUP1Protocol {
      */
     escapeData(data) {
         const escaped = [];
-        const specialChars = [this.SOF, this.EOF, this.ESCAPE];
         
         for (const byte of data) {
-            if (specialChars.includes(byte)) {
-                escaped.push(this.ESCAPE);
+            if (byte === 0x00) {
+                escaped.push(this.ESCAPE, 0x30); // \0
+            } else if (byte === 0xFF) {
+                escaped.push(this.ESCAPE, 0x46); // \F
+            } else if (byte === this.SOF) {
+                escaped.push(this.ESCAPE, this.SOF); // \>
+            } else if (byte === this.EOF) {
+                escaped.push(this.ESCAPE, this.EOF); // \<
+            } else if (byte === this.ESCAPE) {
+                escaped.push(this.ESCAPE, this.ESCAPE); // \\
+            } else {
+                escaped.push(byte);
             }
-            escaped.push(byte);
         }
         
         return escaped;
@@ -70,9 +78,17 @@ class MUP1Protocol {
         
         while (i < data.length) {
             if (data[i] === this.ESCAPE && i + 1 < data.length) {
-                i++; // Skip escape character
+                i++;
+                if (data[i] === 0x30) {
+                    unescaped.push(0x00);
+                } else if (data[i] === 0x46) {
+                    unescaped.push(0xFF);
+                } else {
+                    unescaped.push(data[i]);
+                }
+            } else {
+                unescaped.push(data[i]);
             }
-            unescaped.push(data[i]);
             i++;
         }
         
@@ -83,32 +99,41 @@ class MUP1Protocol {
      * Create MUP1 frame
      */
     createFrame(type, data = []) {
+        // Build checksum data (non-escaped)
+        const checksumData = [];
+        checksumData.push(this.SOF);
+        checksumData.push(type.charCodeAt(0));
+        checksumData.push(...data);
+        checksumData.push(this.EOF);
+        
+        // Add padding EOF if even number of data bytes
+        if (data.length % 2 === 0) {
+            checksumData.push(this.EOF);
+        }
+        
+        // Calculate checksum
+        const checksum = this.calculateChecksum(checksumData);
+        const checksumStr = checksum.toString(16).padStart(4, '0');
+        
+        // Build actual frame with escaped data
         const frame = [];
-        
-        // Start of frame
         frame.push(this.SOF);
-        
-        // Command type
         frame.push(type.charCodeAt(0));
         
-        // Escaped data
         if (data.length > 0) {
             frame.push(...this.escapeData(data));
         }
         
-        // End of frame (double for even-sized frames)
         frame.push(this.EOF);
-        if ((frame.length + 4) % 2 === 0) {
+        
+        // Add padding EOF if even
+        if (data.length % 2 === 0) {
             frame.push(this.EOF);
         }
         
-        // Calculate checksum on the entire frame so far
-        const checksum = this.calculateChecksum(frame);
-        
-        // Add checksum as hex string
-        const checksumStr = checksum.toString(16).padStart(4, '0');
-        for (let i = 0; i < checksumStr.length; i++) {
-            frame.push(checksumStr.charCodeAt(i));
+        // Add checksum as ASCII hex
+        for (const ch of checksumStr) {
+            frame.push(ch.charCodeAt(0));
         }
         
         return new Uint8Array(frame);

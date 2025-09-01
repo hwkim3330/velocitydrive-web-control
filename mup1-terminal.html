@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MUP1 Terminal - VelocityDRIVE Control</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #1e1e1e;
+            color: #e0e0e0;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background: #2d2d2d;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        h1 {
+            margin: 0;
+            color: #00a0e9;
+            font-size: 24px;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        button {
+            background: #00a0e9;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+        
+        button:hover:not(:disabled) {
+            background: #0090d0;
+        }
+        
+        button:disabled {
+            background: #555;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+        
+        .status {
+            padding: 8px 16px;
+            background: #333;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        
+        .status.connected {
+            background: #2d5a2d;
+            color: #4caf50;
+        }
+        
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 20px;
+        }
+        
+        .terminal-section {
+            background: #2d2d2d;
+            border-radius: 8px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .terminal {
+            background: #0c0c0c;
+            border: 1px solid #444;
+            border-radius: 5px;
+            padding: 10px;
+            height: 500px;
+            overflow-y: auto;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 13px;
+            line-height: 1.4;
+        }
+        
+        .log-entry {
+            margin: 2px 0;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        
+        .log-entry.tx { color: #00a0e9; }
+        .log-entry.rx { color: #4caf50; }
+        .log-entry.mup1 { color: #ff9800; font-weight: bold; }
+        .log-entry.error { color: #f44336; }
+        .log-entry.info { color: #9e9e9e; font-style: italic; }
+        
+        .input-area {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        input[type="text"] {
+            flex: 1;
+            padding: 10px;
+            background: #1a1a1a;
+            border: 1px solid #444;
+            color: #e0e0e0;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 14px;
+        }
+        
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #00a0e9;
+        }
+        
+        .side-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .panel {
+            background: #2d2d2d;
+            border-radius: 8px;
+            padding: 15px;
+        }
+        
+        .panel h3 {
+            margin: 0 0 15px 0;
+            color: #00a0e9;
+            font-size: 16px;
+        }
+        
+        .quick-cmd {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+        
+        .cmd-btn {
+            padding: 8px;
+            font-size: 12px;
+            background: #1a1a1a;
+            border: 1px solid #444;
+        }
+        
+        .cmd-btn:hover {
+            background: #333;
+            border-color: #00a0e9;
+        }
+        
+        .device-info {
+            display: grid;
+            gap: 10px;
+            font-size: 13px;
+        }
+        
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px;
+            background: #1a1a1a;
+            border-radius: 3px;
+        }
+        
+        .info-label {
+            color: #888;
+        }
+        
+        .info-value {
+            color: #4caf50;
+            font-weight: bold;
+            font-family: monospace;
+        }
+        
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #1a1a1a;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #555;
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #666;
+        }
+        
+        @media (max-width: 768px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 MUP1 Terminal</h1>
+            <div class="controls">
+                <button id="connectBtn" onclick="toggleConnection()">Connect</button>
+                <button id="clearBtn" onclick="clearTerminal()">Clear</button>
+                <div id="status" class="status">Disconnected</div>
+            </div>
+        </div>
+        
+        <div class="main-grid">
+            <div class="terminal-section">
+                <div id="terminal" class="terminal"></div>
+                <div class="input-area">
+                    <input type="text" id="commandInput" placeholder="Enter command or MUP1 frame (e.g., >p<<8553)" onkeypress="handleKeyPress(event)">
+                    <button onclick="sendCommand()">Send</button>
+                </div>
+            </div>
+            
+            <div class="side-panel">
+                <div class="panel">
+                    <h3>Device Info</h3>
+                    <div class="device-info">
+                        <div class="info-row">
+                            <span class="info-label">Version:</span>
+                            <span class="info-value" id="deviceVersion">-</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Uptime:</span>
+                            <span class="info-value" id="deviceUptime">-</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Max Data:</span>
+                            <span class="info-value" id="maxDataSize">-</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">MUP1 Ver:</span>
+                            <span class="info-value" id="mup1Version">-</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="panel">
+                    <h3>Quick Commands</h3>
+                    <div class="quick-cmd">
+                        <button class="cmd-btn" onclick="sendMUP1Ping()">🏓 Ping</button>
+                        <button class="cmd-btn" onclick="sendRaw('?')">❓ Help</button>
+                        <button class="cmd-btn" onclick="sendRaw('AT+VERSION')">📋 Version</button>
+                        <button class="cmd-btn" onclick="sendRaw('AT+IFCONFIG')">🌐 IF Config</button>
+                        <button class="cmd-btn" onclick="sendRaw('AT+LINKSTATUS')">🔗 Link Status</button>
+                        <button class="cmd-btn" onclick="sendRaw('AT+STATS')">📊 Stats</button>
+                        <button class="cmd-btn" onclick="sendRaw('AT+CBS?')">🎯 CBS Status</button>
+                        <button class="cmd-btn" onclick="sendRaw('AT+TAS?')">⏰ TAS Status</button>
+                        <button class="cmd-btn" onclick="sendRaw('AT+PTP?')">🕐 PTP Status</button>
+                        <button class="cmd-btn" onclick="sendRaw('AT+RESET')">🔄 Reset</button>
+                    </div>
+                </div>
+                
+                <div class="panel">
+                    <h3>Test Frames</h3>
+                    <div class="quick-cmd">
+                        <button class="cmd-btn" onclick="sendRaw('>p<<8553')">Raw Ping</button>
+                        <button class="cmd-btn" onclick="testCoAP()">CoAP GET</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let port = null;
+        let reader = null;
+        let writer = null;
+        let readableStreamClosed = null;
+        let writableStreamClosed = null;
+        let isConnected = false;
+        let readBuffer = '';
+        
+        async function toggleConnection() {
+            if (isConnected) {
+                await disconnect();
+            } else {
+                await connect();
+            }
+        }
+        
+        async function connect() {
+            try {
+                // Request port
+                port = await navigator.serial.requestPort();
+                
+                // Open with settings
+                await port.open({ 
+                    baudRate: 115200,
+                    dataBits: 8,
+                    stopBits: 1,
+                    parity: 'none'
+                });
+                
+                // Setup streams
+                const textDecoder = new TextDecoderStream();
+                readableStreamClosed = port.readable.pipeTo(textDecoder.writable);
+                reader = textDecoder.readable.getReader();
+                
+                const textEncoder = new TextEncoderStream();
+                writableStreamClosed = textEncoder.readable.pipeTo(port.writable);
+                writer = textEncoder.writable.getWriter();
+                
+                isConnected = true;
+                updateStatus(true);
+                log('Connected to serial port', 'info');
+                
+                // Start reading
+                readLoop();
+                
+            } catch (error) {
+                log('Connection failed: ' + error.message, 'error');
+                console.error(error);
+            }
+        }
+        
+        async function disconnect() {
+            try {
+                if (reader) {
+                    await reader.cancel();
+                    await readableStreamClosed.catch(() => {});
+                }
+                if (writer) {
+                    await writer.close();
+                    await writableStreamClosed.catch(() => {});
+                }
+                if (port) {
+                    await port.close();
+                }
+                
+                reader = null;
+                writer = null;
+                port = null;
+                isConnected = false;
+                updateStatus(false);
+                log('Disconnected', 'info');
+                
+            } catch (error) {
+                log('Disconnect error: ' + error.message, 'error');
+            }
+        }
+        
+        async function readLoop() {
+            while (reader) {
+                try {
+                    const { value, done } = await reader.read();
+                    if (done) break;
+                    if (value) {
+                        handleData(value);
+                    }
+                } catch (error) {
+                    if (isConnected) {
+                        log('Read error: ' + error.message, 'error');
+                    }
+                    break;
+                }
+            }
+        }
+        
+        function handleData(data) {
+            readBuffer += data;
+            
+            // Look for MUP1 frames
+            const frameRegex = />([A-Za-z])([^<]*?)(<?<?)([0-9a-fA-F]{4})/g;
+            let match;
+            let lastIndex = 0;
+            
+            while ((match = frameRegex.exec(readBuffer)) !== null) {
+                const [fullFrame, type, payload, eof, checksum] = match;
+                
+                // Log the frame
+                log('RX: ' + fullFrame, 'rx');
+                
+                // Parse frame type
+                switch (type) {
+                    case 'A': // Announce
+                        parseAnnounce(payload);
+                        break;
+                    case 'P': // Pong
+                        parsePong(payload);
+                        break;
+                    case 'T': // Trace
+                        log('[TRACE] ' + payload, 'mup1');
+                        break;
+                    case 'C': // CoAP Response
+                        log('[COAP] Response received', 'mup1');
+                        break;
+                    default:
+                        log('[' + type + '] ' + payload, 'mup1');
+                }
+                
+                lastIndex = frameRegex.lastIndex;
+            }
+            
+            // Keep unprocessed data
+            if (lastIndex > 0) {
+                readBuffer = readBuffer.substring(lastIndex);
+            }
+            
+            // Prevent buffer overflow
+            if (readBuffer.length > 10000) {
+                readBuffer = readBuffer.substring(readBuffer.length - 1000);
+            }
+            
+            // Also show raw data that's not MUP1
+            if (data.trim() && !data.includes('>')) {
+                log('RX: ' + data, 'rx');
+            }
+        }
+        
+        function parseAnnounce(data) {
+            log('[ANNOUNCE] ' + data, 'mup1');
+            const parts = data.split(' ');
+            if (parts.length >= 4) {
+                updateDeviceInfo({
+                    version: parts[0],
+                    uptime: parts[1],
+                    maxData: parts[2],
+                    mup1Ver: parts[3]
+                });
+            }
+        }
+        
+        function parsePong(data) {
+            log('[PONG] ' + data, 'mup1');
+            const parts = data.split(' ');
+            if (parts.length >= 4) {
+                updateDeviceInfo({
+                    version: parts[0],
+                    uptime: parts[1],
+                    maxData: parts[2],
+                    mup1Ver: parts[3]
+                });
+            }
+        }
+        
+        function updateDeviceInfo(info) {
+            if (info.version) document.getElementById('deviceVersion').textContent = info.version;
+            if (info.uptime) document.getElementById('deviceUptime').textContent = info.uptime + 's';
+            if (info.maxData) document.getElementById('maxDataSize').textContent = info.maxData + ' bytes';
+            if (info.mup1Ver) document.getElementById('mup1Version').textContent = 'v' + info.mup1Ver;
+        }
+        
+        async function sendMUP1Ping() {
+            await sendRaw('>p<<8553');
+        }
+        
+        async function sendRaw(data) {
+            if (!writer) {
+                log('Not connected', 'error');
+                return;
+            }
+            
+            try {
+                await writer.write(data);
+                log('TX: ' + data, 'tx');
+            } catch (error) {
+                log('Send error: ' + error.message, 'error');
+            }
+        }
+        
+        async function sendCommand() {
+            const input = document.getElementById('commandInput');
+            const cmd = input.value.trim();
+            if (!cmd) return;
+            
+            await sendRaw(cmd);
+            input.value = '';
+            input.focus();
+        }
+        
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendCommand();
+            }
+        }
+        
+        function testCoAP() {
+            // Simple CoAP GET test (would need proper implementation)
+            log('CoAP test not yet implemented', 'info');
+        }
+        
+        function updateStatus(connected) {
+            const status = document.getElementById('status');
+            const btn = document.getElementById('connectBtn');
+            
+            if (connected) {
+                status.textContent = 'Connected';
+                status.classList.add('connected');
+                btn.textContent = 'Disconnect';
+            } else {
+                status.textContent = 'Disconnected';
+                status.classList.remove('connected');
+                btn.textContent = 'Connect';
+            }
+        }
+        
+        function log(message, type = 'info') {
+            const terminal = document.getElementById('terminal');
+            const entry = document.createElement('div');
+            entry.className = 'log-entry ' + type;
+            
+            const timestamp = new Date().toLocaleTimeString('en-US', {
+                hour12: false,
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+            
+            entry.textContent = '[' + timestamp + '] ' + message;
+            terminal.appendChild(entry);
+            terminal.scrollTop = terminal.scrollHeight;
+            
+            // Limit entries
+            while (terminal.children.length > 1000) {
+                terminal.removeChild(terminal.firstChild);
+            }
+        }
+        
+        function clearTerminal() {
+            document.getElementById('terminal').innerHTML = '';
+            log('Terminal cleared', 'info');
+        }
+        
+        // Check WebSerial support
+        if (!('serial' in navigator)) {
+            log('WebSerial API not supported. Please use Chrome or Edge.', 'error');
+            document.getElementById('connectBtn').disabled = true;
+        } else {
+            log('Ready to connect...', 'info');
+        }
+    </script>
+</body>
+</html>

@@ -218,41 +218,53 @@ class WebSerialTerminal {
     }
 
     parseMUP1(text) {
-        // Simple MUP1 frame detection and parsing
-        const lines = text.split('\n');
-        
-        lines.forEach(line => {
-            if (line.startsWith('>')) {
-                const frameMatch = line.match(/^>([A-Z])([^<]*)(<?)(.*?)$/);
-                if (frameMatch) {
-                    const [, type, data, eof, checksum] = frameMatch;
-                    
-                    switch (type) {
-                        case 'A': // Auto/Answer
-                            this.log(`[AUTO] ${data}`, 'mup1');
-                            break;
-                        case 'T': // Text
-                            this.log(`[TEXT] ${data}`, 'mup1');
-                            break;
-                        case 'P': // Pong
-                            this.log(`[PONG] ${data}`, 'mup1');
-                            break;
-                        case 'C': // CoAP
-                            this.log(`[COAP] Response received`, 'mup1');
-                            break;
-                        case 'S': // Status
-                            this.log(`[STATUS] ${data}`, 'mup1');
-                            break;
-                        default:
-                            this.log(`[${type}] ${data}`, 'mup1');
-                    }
-                } else {
-                    this.displayText(line, 'rx');
+        // Handle MUP1 frames
+        if (text.includes('>')) {
+            // Look for complete MUP1 frames
+            const frameRegex = />([A-Za-z])([^<]*?)(<?<?)([0-9a-fA-F]{4})/g;
+            let match;
+            
+            while ((match = frameRegex.exec(text)) !== null) {
+                const [fullFrame, type, data, eof, checksum] = match;
+                
+                switch (type) {
+                    case 'A': // Announce
+                        this.log(`[ANNOUNCE] ${data}`, 'mup1');
+                        // Parse version info
+                        const parts = data.split(' ');
+                        if (parts[0]) {
+                            this.log(`Version: ${parts[0]}`, 'info');
+                            this.log(`MUP1 Max Size: ${parts[2] || '?'} bytes`, 'info');
+                        }
+                        break;
+                        
+                    case 'T': // Trace
+                        this.log(`[TRACE] ${data}`, 'mup1');
+                        break;
+                        
+                    case 'P': // Pong
+                        this.log(`[PONG] ${data}`, 'mup1');
+                        break;
+                        
+                    case 'C': // CoAP Response
+                        this.log(`[COAP] Response received`, 'mup1');
+                        break;
+                        
+                    case 'S': // Status
+                        this.log(`[STATUS] ${data}`, 'mup1');
+                        break;
+                        
+                    default:
+                        this.log(`[${type}] ${data}`, 'mup1');
                 }
-            } else if (line.trim()) {
-                this.displayText(line, 'rx');
             }
-        });
+            
+            // Also display raw text
+            this.displayText(text, 'rx');
+        } else {
+            // Regular text output
+            this.displayText(text, 'rx');
+        }
     }
 
     async sendInput() {
@@ -290,14 +302,25 @@ class WebSerialTerminal {
         }
 
         try {
-            // Add line ending
-            const lineEnding = document.getElementById('lineEnding')?.value || '\r\n';
-            const dataToSend = text + lineEnding;
+            // Check if it's a MUP1 ping command
+            if (text === 'p' || text === 'ping') {
+                // Send proper MUP1 ping frame: >p<<8553
+                const pingFrame = '>p<<8553';
+                await this.writer.write(pingFrame);
+                this.log(`Sent MUP1 PING`, 'tx');
+                this.txCount += pingFrame.length;
+            } else if (text.startsWith('>')) {
+                // Raw MUP1 frame
+                await this.writer.write(text);
+                this.txCount += text.length;
+            } else {
+                // Regular text with line ending
+                const lineEnding = document.getElementById('lineEnding')?.value || '';
+                const dataToSend = text + lineEnding;
+                await this.writer.write(dataToSend);
+                this.txCount += dataToSend.length;
+            }
             
-            // Send through writer
-            await this.writer.write(dataToSend);
-            
-            this.txCount += dataToSend.length;
             this.updateCounters();
             
         } catch (error) {

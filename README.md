@@ -1,6 +1,6 @@
 # VelocityDRIVE Web Control Terminal
 
-Web-based serial terminal and control interface for Microchip LAN9662 VelocityDRIVE platform.
+Web-based serial terminal and control interface for Microchip LAN9662 VelocityDRIVE platform with MUP1 protocol support.
 
 ## 🌟 Features
 
@@ -28,7 +28,8 @@ python3 -m http.server 8000
 npx http-server -p 8000
 
 # Open in browser
-http://localhost:8000/simple-terminal.html
+http://localhost:8000/mup1-terminal.html  # MUP1 Protocol Terminal (Recommended)
+http://localhost:8000/simple-terminal.html  # Basic Terminal
 ```
 
 ## 📋 Requirements
@@ -38,6 +39,12 @@ http://localhost:8000/simple-terminal.html
 - **Connection**: USB serial connection (typically /dev/ttyACM0 or COM port)
 
 ## 🎯 Usage
+
+### MUP1 Terminal (mup1-terminal.html) - **Recommended**
+1. Click **Connect** button
+2. Select serial port (usually /dev/ttyACM0 or COM port)
+3. Use quick commands or type MUP1 frames directly
+4. Device info updates automatically from PONG responses
 
 ### Basic Terminal (simple-terminal.html)
 1. Click **Connect** button
@@ -76,9 +83,11 @@ RX: >PVelocitySP-v2025.06-LAN9662-ung8291 0 300 2<<98e8  # Pong response
 
 ```
 velocitydrive-web-control/
+├── mup1-terminal.html      # MUP1 Protocol Terminal (NEW - Recommended)
 ├── simple-terminal.html    # Basic terminal interface
 ├── index.html              # Advanced control interface
 ├── terminal.html           # Full-featured terminal
+├── tsn-config.html         # TSN Configuration Tool
 ├── styles.css              # Stylesheet
 ├── js/
 │   ├── webserial-terminal.js  # Improved WebSerial handler
@@ -87,6 +96,8 @@ velocitydrive-web-control/
 │   ├── coap-client.js         # CoAP client
 │   ├── cbor-encoder.js        # CBOR encoder/decoder
 │   ├── yaml-parser.js         # YAML parser
+│   ├── tsn-config.js          # TSN configuration logic
+│   ├── tsn-test-scenarios.js  # TSN test automation
 │   └── main.js                # Main application
 └── README.md               # This file
 ```
