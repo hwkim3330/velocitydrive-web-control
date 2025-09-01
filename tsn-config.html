@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VelocityDRIVE TSN Configuration Tool</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: #fff;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            padding: 30px 0;
+            border-bottom: 2px solid rgba(255,255,255,0.2);
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #b8d4f1;
+            font-size: 14px;
+        }
+
+        .connection-bar {
+            background: rgba(255,255,255,0.1);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #ff4444;
+        }
+
+        .status-dot.connected {
+            background: #44ff44;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .tabs {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 30px;
+            background: rgba(0,0,0,0.2);
+            padding: 5px;
+            border-radius: 8px;
+        }
+
+        .tab {
+            padding: 12px 24px;
+            background: rgba(255,255,255,0.1);
+            border: none;
+            color: #fff;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all 0.3s;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .tab:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        .tab.active {
+            background: rgba(255,255,255,0.3);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+
+        .content {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .section {
+            margin-bottom: 30px;
+        }
+
+        .section h2 {
+            font-size: 20px;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid rgba(255,255,255,0.2);
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            margin-bottom: 8px;
+            font-size: 13px;
+            color: #b8d4f1;
+            font-weight: 500;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            padding: 10px;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 6px;
+            color: #fff;
+            font-size: 14px;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #4a90e2;
+            box-shadow: 0 0 0 2px rgba(74,144,226,0.2);
+        }
+
+        .priority-mapping {
+            background: rgba(0,0,0,0.2);
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .mapping-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .mapping-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .mapping-item label {
+            font-size: 12px;
+            min-width: 50px;
+        }
+
+        .mapping-item input,
+        .mapping-item select {
+            flex: 1;
+            padding: 6px;
+            font-size: 12px;
+        }
+
+        button {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            color: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102,126,234,0.4);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .btn-secondary {
+            background: rgba(255,255,255,0.2);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #f44336 0%, #e91e63 100%);
+        }
+
+        .gcl-entry {
+            background: rgba(0,0,0,0.2);
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 10px;
+        }
+
+        .gcl-entry-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .yaml-output {
+            background: rgba(0,0,0,0.4);
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .info-box {
+            background: rgba(74,144,226,0.2);
+            padding: 15px;
+            border-radius: 6px;
+            border-left: 4px solid #4a90e2;
+            margin-bottom: 20px;
+        }
+
+        .info-box h3 {
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+
+        .info-box p {
+            font-size: 13px;
+            line-height: 1.6;
+            color: #b8d4f1;
+        }
+
+        .traffic-class-config {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .tc-card {
+            background: rgba(0,0,0,0.2);
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .tc-card h4 {
+            font-size: 14px;
+            margin-bottom: 10px;
+            color: #4a90e2;
+        }
+
+        .tc-card input {
+            width: 100%;
+            margin-bottom: 8px;
+        }
+
+        /* Terminal output */
+        .terminal {
+            background: #000;
+            color: #0f0;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 20px;
+        }
+
+        .terminal-line {
+            margin-bottom: 5px;
+        }
+
+        .terminal-line.error {
+            color: #f44;
+        }
+
+        .terminal-line.success {
+            color: #4f4;
+        }
+
+        .terminal-line.info {
+            color: #44f;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+
+            .tabs {
+                flex-wrap: wrap;
+            }
+
+            .tab {
+                flex: 1 0 45%;
+            }
+
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔧 VelocityDRIVE TSN Configuration Tool</h1>
+            <p class="subtitle">LAN9662 EVB Board - TSN Features Configuration</p>
+        </header>
+
+        <div class="connection-bar">
+            <div class="status">
+                <span class="status-dot" id="statusDot"></span>
+                <span id="connectionStatus">Disconnected</span>
+                <select id="portSelect">
+                    <option value="/dev/ttyACM0">/dev/ttyACM0</option>
+                    <option value="/dev/ttyUSB0">/dev/ttyUSB0</option>
+                </select>
+            </div>
+            <div>
+                <button id="connectBtn">Connect</button>
+                <button id="fetchConfigBtn" disabled>Fetch Current Config</button>
+            </div>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" data-tab="vlan">VLAN & Ports</button>
+            <button class="tab" data-tab="cbs">CBS (Credit-Based Shaper)</button>
+            <button class="tab" data-tab="tas">TAS (Time-Aware Shaper)</button>
+            <button class="tab" data-tab="pcp">PCP Mapping</button>
+            <button class="tab" data-tab="scenario">Test Scenarios</button>
+            <button class="tab" data-tab="yaml">YAML Output</button>
+        </div>
+
+        <div class="content">
+            <!-- VLAN & Ports Tab -->
+            <div class="tab-content active" id="vlan">
+                <div class="section">
+                    <h2>VLAN Configuration</h2>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>VLAN ID</label>
+                            <input type="number" id="vlanId" min="1" max="4094" value="100">
+                        </div>
+                        <div class="form-group">
+                            <label>VLAN Name</label>
+                            <input type="text" id="vlanName" value="TSN-Test">
+                        </div>
+                        <div class="form-group">
+                            <label>Port 1 Mode</label>
+                            <select id="port1Mode">
+                                <option value="tagged">Tagged</option>
+                                <option value="untagged">Untagged</option>
+                                <option value="none">Not Member</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Port 2 Mode</label>
+                            <select id="port2Mode">
+                                <option value="tagged">Tagged</option>
+                                <option value="untagged">Untagged</option>
+                                <option value="none">Not Member</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2>Port Configuration</h2>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Port 1 Type</label>
+                            <select id="port1Type">
+                                <option value="c-vlan-bridge-port">C-VLAN Bridge Port</option>
+                                <option value="s-vlan-bridge-port">S-VLAN Bridge Port</option>
+                                <option value="customer-vlan-port">Customer VLAN Port</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Port 2 Type</label>
+                            <select id="port2Type">
+                                <option value="c-vlan-bridge-port">C-VLAN Bridge Port</option>
+                                <option value="s-vlan-bridge-port">S-VLAN Bridge Port</option>
+                                <option value="customer-vlan-port">Customer VLAN Port</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Port 1 Frame Filter</label>
+                            <select id="port1Frame">
+                                <option value="admit-all">Admit All</option>
+                                <option value="admit-only-VLAN-tagged-frames">Only VLAN Tagged</option>
+                                <option value="admit-only-untagged-and-priority-tagged">Untagged & Priority</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Port 2 Frame Filter</label>
+                            <select id="port2Frame">
+                                <option value="admit-all">Admit All</option>
+                                <option value="admit-only-VLAN-tagged-frames">Only VLAN Tagged</option>
+                                <option value="admit-only-untagged-and-priority-tagged">Untagged & Priority</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="btn-group">
+                        <button onclick="applyVlanConfig()">Apply VLAN Configuration</button>
+                        <button class="btn-secondary" onclick="generateVlanYaml()">Generate YAML</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CBS Tab -->
+            <div class="tab-content" id="cbs">
+                <div class="section">
+                    <h2>CBS (Credit-Based Shaper) Configuration</h2>
+                    
+                    <div class="info-box">
+                        <h3>CBS Test Scenario</h3>
+                        <p>Configure idle-slope values for each Traffic Class (TC0-TC7) to control bandwidth allocation.
+                        Based on the test scenario with multiple queue transmission.</p>
+                    </div>
+
+                    <h3>Traffic Class Shapers</h3>
+                    <div class="traffic-class-config">
+                        <div class="tc-card">
+                            <h4>TC0 - Best Effort</h4>
+                            <label>Idle Slope (kbps)</label>
+                            <input type="number" id="tc0_idle" value="0" min="0">
+                            <label>Send Slope (kbps)</label>
+                            <input type="number" id="tc0_send" value="" placeholder="Optional">
+                            <label>Hi Credit</label>
+                            <input type="number" id="tc0_hicredit" value="" placeholder="Optional">
+                            <label>Lo Credit</label>
+                            <input type="number" id="tc0_locredit" value="" placeholder="Optional">
+                        </div>
+                        <div class="tc-card">
+                            <h4>TC1 - Background</h4>
+                            <label>Idle Slope (kbps)</label>
+                            <input type="number" id="tc1_idle" value="0" min="0">
+                            <label>Send Slope (kbps)</label>
+                            <input type="number" id="tc1_send" value="" placeholder="Optional">
+                            <label>Hi Credit</label>
+                            <input type="number" id="tc1_hicredit" value="" placeholder="Optional">
+                            <label>Lo Credit</label>
+                            <input type="number" id="tc1_locredit" value="" placeholder="Optional">
+                        </div>
+                        <div class="tc-card">
+                            <h4>TC2 - Excellent Effort</h4>
+                            <label>Idle Slope (kbps)</label>
+                            <input type="number" id="tc2_idle" value="10000" min="0">
+                            <label>Send Slope (kbps)</label>
+                            <input type="number" id="tc2_send" value="" placeholder="Optional">
+                            <label>Hi Credit</label>
+                            <input type="number" id="tc2_hicredit" value="" placeholder="Optional">
+                            <label>Lo Credit</label>
+                            <input type="number" id="tc2_locredit" value="" placeholder="Optional">
+                        </div>
+                        <div class="tc-card">
+                            <h4>TC3 - Critical Apps</h4>
+                            <label>Idle Slope (kbps)</label>
+                            <input type="number" id="tc3_idle" value="20000" min="0">
+                            <label>Send Slope (kbps)</label>
+                            <input type="number" id="tc3_send" value="" placeholder="Optional">
+                            <label>Hi Credit</label>
+                            <input type="number" id="tc3_hicredit" value="" placeholder="Optional">
+                            <label>Lo Credit</label>
+                            <input type="number" id="tc3_locredit" value="" placeholder="Optional">
+                        </div>
+                        <div class="tc-card">
+                            <h4>TC4 - Video</h4>
+                            <label>Idle Slope (kbps)</label>
+                            <input type="number" id="tc4_idle" value="30000" min="0">
+                            <label>Send Slope (kbps)</label>
+                            <input type="number" id="tc4_send" value="" placeholder="Optional">
+                            <label>Hi Credit</label>
+                            <input type="number" id="tc4_hicredit" value="" placeholder="Optional">
+                            <label>Lo Credit</label>
+                            <input type="number" id="tc4_locredit" value="" placeholder="Optional">
+                        </div>
+                        <div class="tc-card">
+                            <h4>TC5 - SR Class B</h4>
+                            <label>Idle Slope (kbps)</label>
+                            <input type="number" id="tc5_idle" value="75000" min="0">
+                            <label>Send Slope (kbps)</label>
+                            <input type="number" id="tc5_send" value="-25000" placeholder="Optional">
+                            <label>Hi Credit</label>
+                            <input type="number" id="tc5_hicredit" value="" placeholder="Optional">
+                            <label>Lo Credit</label>
+                            <input type="number" id="tc5_locredit" value="" placeholder="Optional">
+                        </div>
+                        <div class="tc-card">
+                            <h4>TC6 - SR Class A</h4>
+                            <label>Idle Slope (kbps)</label>
+                            <input type="number" id="tc6_idle" value="75000" min="0">
+                            <label>Send Slope (kbps)</label>
+                            <input type="number" id="tc6_send" value="-25000" placeholder="Optional">
+                            <label>Hi Credit</label>
+                            <input type="number" id="tc6_hicredit" value="" placeholder="Optional">
+                            <label>Lo Credit</label>
+                            <input type="number" id="tc6_locredit" value="" placeholder="Optional">
+                        </div>
+                        <div class="tc-card">
+                            <h4>TC7 - Network Control</h4>
+                            <label>Idle Slope (kbps)</label>
+                            <input type="number" id="tc7_idle" value="0" min="0">
+                            <label>Send Slope (kbps)</label>
+                            <input type="number" id="tc7_send" value="" placeholder="Optional">
+                            <label>Hi Credit</label>
+                            <input type="number" id="tc7_hicredit" value="" placeholder="Optional">
+                            <label>Lo Credit</label>
+                            <input type="number" id="tc7_locredit" value="" placeholder="Optional">
+                        </div>
+                    </div>
+
+                    <div class="form-grid" style="margin-top: 20px;">
+                        <div class="form-group">
+                            <label>Apply to Port</label>
+                            <select id="cbsPort">
+                                <option value="1">Port 1</option>
+                                <option value="2">Port 2</option>
+                                <option value="both">Both Ports</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Hi Credit Limit</label>
+                            <input type="number" id="hiCredit" value="0">
+                        </div>
+                        <div class="form-group">
+                            <label>Lo Credit Limit</label>
+                            <input type="number" id="loCredit" value="0">
+                        </div>
+                    </div>
+
+                    <div class="btn-group">
+                        <button onclick="applyCbsConfig()">Apply CBS Configuration</button>
+                        <button class="btn-secondary" onclick="loadCbsScenario1()">Load Test Scenario 1</button>
+                        <button class="btn-secondary" onclick="loadCbsScenario2()">Load Test Scenario 2</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAS Tab -->
+            <div class="tab-content" id="tas">
+                <div class="section">
+                    <h2>TAS (Time-Aware Shaper) Configuration</h2>
+                    
+                    <div class="info-box">
+                        <h3>Multi-Queue TAS Test</h3>
+                        <p>Configure Gate Control List for 8 Traffic Classes with time slots. 
+                        Each TC gets specific time windows within the cycle time.</p>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Apply to Port</label>
+                            <select id="tasPort">
+                                <option value="1">Port 1</option>
+                                <option value="2">Port 2</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Cycle Time (μs)</label>
+                            <input type="number" id="cycleTime" value="200000">
+                        </div>
+                        <div class="form-group">
+                            <label>Base Time (seconds)</label>
+                            <input type="number" id="baseTime" value="20">
+                        </div>
+                        <div class="form-group">
+                            <label>Gate Enabled</label>
+                            <select id="gateEnabled">
+                                <option value="true">Enabled</option>
+                                <option value="false">Disabled</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <h3>Gate Control List</h3>
+                    <div id="gclEntries">
+                        <div class="gcl-entry">
+                            <div class="gcl-entry-header">
+                                <span>Entry 1</span>
+                                <button class="btn-danger" onclick="removeGclEntry(this)">Remove</button>
+                            </div>
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label>Time Interval (μs)</label>
+                                    <input type="number" class="gcl-time" value="50000">
+                                </div>
+                                <div class="form-group">
+                                    <label>Gate States (Binary)</label>
+                                    <input type="text" class="gcl-gates" value="00000001" placeholder="e.g., 00000001 for TC0">
+                                </div>
+                                <div class="form-group">
+                                    <label>Traffic Classes</label>
+                                    <input type="text" class="gcl-tc" value="TC0" readonly>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="btn-group">
+                        <button onclick="addGclEntry()">Add GCL Entry</button>
+                        <button onclick="applyTasConfig()">Apply TAS Configuration</button>
+                        <button class="btn-secondary" onclick="loadTasScenario()">Load Test Scenario</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PCP Mapping Tab -->
+            <div class="tab-content" id="pcp">
+                <div class="section">
+                    <h2>PCP Priority Mapping Configuration</h2>
+                    
+                    <div class="info-box">
+                        <h3>Priority Code Point Mapping</h3>
+                        <p>Configure how PCP values map to internal priorities and traffic classes.
+                        This affects CBS and TAS queue selection.</p>
+                    </div>
+
+                    <div class="priority-mapping">
+                        <h3>Port 1 Ingress (Decoding Map)</h3>
+                        <div class="mapping-grid">
+                            <div class="mapping-item">
+                                <label>PCP 0 →</label>
+                                <select id="p1_pcp0_priority">
+                                    <option value="0">Priority 0</option>
+                                    <option value="1">Priority 1</option>
+                                    <option value="2">Priority 2</option>
+                                    <option value="3">Priority 3</option>
+                                    <option value="4">Priority 4</option>
+                                    <option value="5">Priority 5</option>
+                                    <option value="6" selected>Priority 6</option>
+                                    <option value="7">Priority 7</option>
+                                </select>
+                            </div>
+                            <div class="mapping-item">
+                                <label>PCP 1 →</label>
+                                <select id="p1_pcp1_priority">
+                                    <option value="0">Priority 0</option>
+                                    <option value="1">Priority 1</option>
+                                    <option value="2">Priority 2</option>
+                                    <option value="3" selected>Priority 3</option>
+                                    <option value="4">Priority 4</option>
+                                    <option value="5">Priority 5</option>
+                                    <option value="6">Priority 6</option>
+                                    <option value="7">Priority 7</option>
+                                </select>
+                            </div>
+                            <div class="mapping-item">
+                                <label>PCP 2 →</label>
+                                <select id="p1_pcp2_priority">
+                                    <option value="0">Priority 0</option>
+                                    <option value="1">Priority 1</option>
+                                    <option value="2">Priority 2</option>
+                                    <option value="3">Priority 3</option>
+                                    <option value="4">Priority 4</option>
+                                    <option value="5">Priority 5</option>
+                                    <option value="6">Priority 6</option>
+                                    <option value="7" selected>Priority 7</option>
+                                </select>
+                            </div>
+                            <div class="mapping-item">
+                                <label>PCP 3 →</label>
+                                <select id="p1_pcp3_priority">
+                                    <option value="0" selected>Priority 0</option>
+                                    <option value="1">Priority 1</option>
+                                    <option value="2">Priority 2</option>
+                                    <option value="3">Priority 3</option>
+                                    <option value="4">Priority 4</option>
+                                    <option value="5">Priority 5</option>
+                                    <option value="6">Priority 6</option>
+                                    <option value="7">Priority 7</option>
+                                </select>
+                            </div>
+                            <div class="mapping-item">
+                                <label>PCP 4 →</label>
+                                <select id="p1_pcp4_priority">
+                                    <option value="0">Priority 0</option>
+                                    <option value="1">Priority 1</option>
+                                    <option value="2" selected>Priority 2</option>
+                                    <option value="3">Priority 3</option>
+                                    <option value="4">Priority 4</option>
+                                    <option value="5">Priority 5</option>
+                                    <option value="6">Priority 6</option>
+                                    <option value="7">Priority 7</option>
+                                </select>
+                            </div>
+                            <div class="mapping-item">
+                                <label>PCP 5 →</label>
+                                <select id="p1_pcp5_priority">
+                                    <option value="0">Priority 0</option>
+                                    <option value="1">Priority 1</option>
+                                    <option value="2">Priority 2</option>
+                                    <option value="3">Priority 3</option>
+                                    <option value="4" selected>Priority 4</option>
+                                    <option value="5">Priority 5</option>
+                                    <option value="6">Priority 6</option>
+                                    <option value="7">Priority 7</option>
+                                </select>
+                            </div>
+                            <div class="mapping-item">
+                                <label>PCP 6 →</label>
+                                <select id="p1_pcp6_priority">
+                                    <option value="0">Priority 0</option>
+                                    <option value="1">Priority 1</option>
+                                    <option value="2">Priority 2</option>
+                                    <option value="3">Priority 3</option>
+                                    <option value="4">Priority 4</option>
+                                    <option value="5" selected>Priority 5</option>
+                                    <option value="6">Priority 6</option>
+                                    <option value="7">Priority 7</option>
+                                </select>
+                            </div>
+                            <div class="mapping-item">
+                                <label>PCP 7 →</label>
+                                <select id="p1_pcp7_priority">
+                                    <option value="0">Priority 0</option>
+                                    <option value="1" selected>Priority 1</option>
+                                    <option value="2">Priority 2</option>
+                                    <option value="3">Priority 3</option>
+                                    <option value="4">Priority 4</option>
+                                    <option value="5">Priority 5</option>
+                                    <option value="6">Priority 6</option>
+                                    <option value="7">Priority 7</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="priority-mapping">
+                        <h3>Port 2 Egress (Encoding Map)</h3>
+                        <div class="mapping-grid">
+                            <div class="mapping-item">
+                                <label>Priority 0 →</label>
+                                <select id="p2_priority0_pcp">
+                                    <option value="0">PCP 0</option>
+                                    <option value="1">PCP 1</option>
+                                    <option value="2">PCP 2</option>
+                                    <option value="3">PCP 3</option>
+                                    <option value="4" selected>PCP 4</option>
+                                    <option value="5">PCP 5</option>
+                                    <option value="6">PCP 6</option>
+                                    <option value="7">PCP 7</option>
+                                </select>
+                            </div>
+                            <div class="mapping-item">
+                                <label>Priority 1 →</label>
+                                <select id="p2_priority1_pcp">
+                                    <option value="0" selected>PCP 0</option>
+                                    <option value="1">PCP 1</option>
+                                    <option value="2">PCP 2</option>
+                                    <option value="3">PCP 3</option>
+                                    <option value="4">PCP 4</option>
+                                    <option value="5">PCP 5</option>
+                                    <option value="6">PCP 6</option>
+                                    <option value="7">PCP 7</option>
+                                </select>
+                            </div>
+                            <div class="mapping-item">
+                                <label>Priority 2 →</label>
+                                <select id="p2_priority2_pcp">
+                                    <option value="0">PCP 0</option>
+                                    <option value="1">PCP 1</option>
+                                    <option value="2">PCP 2</option>
+                                    <option value="3" selected>PCP 3</option>
+                                    <option value="4">PCP 4</option>
+                                    <option value="5">PCP 5</option>
+                                    <option value="6">PCP 6</option>
+                                    <option value="7">PCP 7</option>
+                                </select>
+                            </div>
+                            <div class="mapping-item">
+                                <label>Priority 3 →</label>
+                                <select id="p2_priority3_pcp">
+                                    <option value="0">PCP 0</option>
+                                    <option value="1">PCP 1</option>
+                                    <option value="2">PCP 2</option>
+                                    <option value="3">PCP 3</option>
+                                    <option value="4">PCP 4</option>
+                                    <option value="5">PCP 5</option>
+                                    <option value="6" selected>PCP 6</option>
+                                    <option value="7">PCP 7</option>
+                                </select>
+                            </div>
+                            <div class="mapping-item">
+                                <label>Priority 4 →</label>
+                                <select id="p2_priority4_pcp">
+                                    <option value="0">PCP 0</option>
+                                    <option value="1">PCP 1</option>
+                                    <option value="2" selected>PCP 2</option>
+                                    <option value="3">PCP 3</option>
+                                    <option value="4">PCP 4</option>
+                                    <option value="5">PCP 5</option>
+                                    <option value="6">PCP 6</option>
+                                    <option value="7">PCP 7</option>
+                                </select>
+                            </div>
+                            <div class="mapping-item">
+                                <label>Priority 5 →</label>
+                                <select id="p2_priority5_pcp">
+                                    <option value="0">PCP 0</option>
+                                    <option value="1" selected>PCP 1</option>
+                                    <option value="2">PCP 2</option>
+                                    <option value="3">PCP 3</option>
+                                    <option value="4">PCP 4</option>
+                                    <option value="5">PCP 5</option>
+                                    <option value="6">PCP 6</option>
+                                    <option value="7">PCP 7</option>
+                                </select>
+                            </div>
+                            <div class="mapping-item">
+                                <label>Priority 6 →</label>
+                                <select id="p2_priority6_pcp">
+                                    <option value="0">PCP 0</option>
+                                    <option value="1">PCP 1</option>
+                                    <option value="2">PCP 2</option>
+                                    <option value="3">PCP 3</option>
+                                    <option value="4">PCP 4</option>
+                                    <option value="5">PCP 5</option>
+                                    <option value="6">PCP 6</option>
+                                    <option value="7" selected>PCP 7</option>
+                                </select>
+                            </div>
+                            <div class="mapping-item">
+                                <label>Priority 7 →</label>
+                                <select id="p2_priority7_pcp">
+                                    <option value="0">PCP 0</option>
+                                    <option value="1">PCP 1</option>
+                                    <option value="2">PCP 2</option>
+                                    <option value="3">PCP 3</option>
+                                    <option value="4">PCP 4</option>
+                                    <option value="5" selected>PCP 5</option>
+                                    <option value="6">PCP 6</option>
+                                    <option value="7">PCP 7</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="btn-group">
+                        <button onclick="applyPcpMapping()">Apply PCP Mapping</button>
+                        <button class="btn-secondary" onclick="loadPcpScenario()">Load Test Scenario</button>
+                        <button class="btn-secondary" onclick="resetPcpMapping()">Reset to 1:1</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Test Scenarios Tab -->
+            <div class="tab-content" id="scenario">
+                <div class="section">
+                    <h2>Pre-configured Test Scenarios</h2>
+                    
+                    <div class="info-box">
+                        <h3>Available Test Scenarios</h3>
+                        <p>Load pre-configured test scenarios based on the documentation.</p>
+                    </div>
+
+                    <div style="display: grid; gap: 20px;">
+                        <div class="scenario-card" style="background: rgba(0,0,0,0.2); padding: 20px; border-radius: 8px;">
+                            <h3>CBS Multi-Queue Test (PC1→PC2)</h3>
+                            <p style="color: #b8d4f1; margin: 10px 0;">Configure CBS with different idle slopes for TC0-TC7. Port 2 egress with incremental bandwidth allocation.</p>
+                            <button onclick="loadCbsTestScenario1()">Load Scenario</button>
+                        </div>
+
+                        <div class="scenario-card" style="background: rgba(0,0,0,0.2); padding: 20px; border-radius: 8px;">
+                            <h3>CBS Multi-Queue Test (PC2→PC1)</h3>
+                            <p style="color: #b8d4f1; margin: 10px 0;">Reverse direction CBS test with Port 1 egress configuration.</p>
+                            <button onclick="loadCbsTestScenario2()">Load Scenario</button>
+                        </div>
+
+                        <div class="scenario-card" style="background: rgba(0,0,0,0.2); padding: 20px; border-radius: 8px;">
+                            <h3>TAS Multi-Queue Test</h3>
+                            <p style="color: #b8d4f1; margin: 10px 0;">8 Traffic Classes with Gate Control List. 200ms cycle time with specific time slots for each TC.</p>
+                            <button onclick="loadTasTestScenario()">Load Scenario</button>
+                        </div>
+
+                        <div class="scenario-card" style="background: rgba(0,0,0,0.2); padding: 20px; border-radius: 8px;">
+                            <h3>Combined CBS + TAS</h3>
+                            <p style="color: #b8d4f1; margin: 10px 0;">CBS shaping with TAS scheduling for deterministic traffic control.</p>
+                            <button onclick="loadCombinedScenario()">Load Scenario</button>
+                        </div>
+                    </div>
+
+                    <div class="btn-group" style="margin-top: 30px;">
+                        <button onclick="applyAllConfigurations()">Apply All Configurations</button>
+                        <button class="btn-danger" onclick="resetAllConfigurations()">Reset All</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- YAML Output Tab -->
+            <div class="tab-content" id="yaml">
+                <div class="section">
+                    <h2>Generated YAML Configuration</h2>
+                    
+                    <div class="btn-group">
+                        <button onclick="generateFullYaml()">Generate Full YAML</button>
+                        <button onclick="copyYaml()">Copy to Clipboard</button>
+                        <button onclick="downloadYaml()">Download YAML</button>
+                        <button onclick="clearYaml()">Clear</button>
+                    </div>
+
+                    <div class="yaml-output" id="yamlOutput">
+# Click "Generate Full YAML" to create configuration
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2>Command Terminal</h2>
+                    <div class="terminal" id="terminal">
+                        <div class="terminal-line info">TSN Configuration Tool Ready</div>
+                        <div class="terminal-line">Waiting for commands...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/tsn-test-scenarios.js"></script>
+    <script src="js/tsn-config.js"></script>
+</body>
+</html>
