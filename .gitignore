@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Temp files
+*.tmp
+*.bak
+*~
+
+# Python
+__pycache__/
+*.pyc
+.env
+venv/
+
+# Config
+.env.local
+config.local.json

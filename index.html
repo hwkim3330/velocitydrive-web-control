@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VelocityDRIVE LAN9662 Web Control</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎛️ VelocityDRIVE LAN9662 Control Panel</h1>
+            <div class="connection-status">
+                <span id="status" class="disconnected">● Disconnected</span>
+                <button id="connectBtn" class="btn-primary">Connect Serial</button>
+            </div>
+        </header>
+
+        <div class="main-content">
+            <!-- Serial Connection Panel -->
+            <section class="panel">
+                <h2>Serial Connection</h2>
+                <div class="connection-info">
+                    <div class="info-row">
+                        <label>Port:</label>
+                        <span id="portName">Not connected</span>
+                    </div>
+                    <div class="info-row">
+                        <label>Baudrate:</label>
+                        <span id="baudRate">115200</span>
+                    </div>
+                    <div class="info-row">
+                        <label>Device:</label>
+                        <span id="deviceInfo">Unknown</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Control Tabs -->
+            <section class="panel">
+                <div class="tabs">
+                    <button class="tab-btn active" data-tab="basic">Basic Control</button>
+                    <button class="tab-btn" data-tab="tsn">TSN Config</button>
+                    <button class="tab-btn" data-tab="yaml">YAML Config</button>
+                    <button class="tab-btn" data-tab="coap">CoAP/CBOR</button>
+                    <button class="tab-btn" data-tab="raw">Raw MUP1</button>
+                    <button class="tab-btn" data-tab="monitor">Monitor</button>
+                </div>
+
+                <!-- Basic Control Tab -->
+                <div class="tab-content active" id="basic">
+                    <h3>Basic Commands</h3>
+                    <div class="control-grid">
+                        <button class="btn-control" id="pingBtn">Ping Device</button>
+                        <button class="btn-control" id="getVersionBtn">Get Version</button>
+                        <button class="btn-control" id="getStatusBtn">Get Status</button>
+                        <button class="btn-control" id="resetBtn">Reset Device</button>
+                    </div>
+                    
+                    <h3>Port Configuration</h3>
+                    <div class="form-group">
+                        <label>Port Number:</label>
+                        <select id="portSelect">
+                            <option value="0">Port 0</option>
+                            <option value="1">Port 1</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Speed:</label>
+                        <select id="speedSelect">
+                            <option value="auto">Auto</option>
+                            <option value="10">10 Mbps</option>
+                            <option value="100">100 Mbps</option>
+                            <option value="1000">1 Gbps</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Duplex:</label>
+                        <select id="duplexSelect">
+                            <option value="auto">Auto</option>
+                            <option value="half">Half</option>
+                            <option value="full">Full</option>
+                        </select>
+                    </div>
+                    <button class="btn-primary" id="applyPortConfig">Apply Configuration</button>
+                </div>
+
+                <!-- TSN Config Tab -->
+                <div class="tab-content" id="tsn">
+                    <h3>TSN Configuration</h3>
+                    
+                    <div class="tsn-section">
+                        <h4>CBS (Credit-Based Shaper)</h4>
+                        <div class="form-group">
+                            <label>Traffic Class:</label>
+                            <select id="cbsTC">
+                                <option value="2">TC2</option>
+                                <option value="6">TC6</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Idle Slope (kbps):</label>
+                            <input type="number" id="cbsIdleSlope" value="1500">
+                        </div>
+                        <div class="form-group">
+                            <label>Send Slope (kbps):</label>
+                            <input type="number" id="cbsSendSlope" value="-98500">
+                        </div>
+                        <button class="btn-primary" id="applyCBS">Apply CBS Config</button>
+                    </div>
+
+                    <div class="tsn-section">
+                        <h4>TAS (Time-Aware Shaper)</h4>
+                        <div class="form-group">
+                            <label>Cycle Time (μs):</label>
+                            <input type="number" id="tasCycleTime" value="200000">
+                        </div>
+                        <div class="form-group">
+                            <label>Base Time:</label>
+                            <input type="datetime-local" id="tasBaseTime">
+                        </div>
+                        <div class="gate-control-list">
+                            <h5>Gate Control List</h5>
+                            <div id="gateControlEntries">
+                                <!-- Dynamically added entries -->
+                            </div>
+                            <button class="btn-secondary" id="addGateEntry">Add Entry</button>
+                        </div>
+                        <button class="btn-primary" id="applyTAS">Apply TAS Config</button>
+                    </div>
+
+                    <div class="tsn-section">
+                        <h4>PTP (Precision Time Protocol)</h4>
+                        <div class="form-group">
+                            <label>Profile:</label>
+                            <select id="ptpProfile">
+                                <option value="default">Default</option>
+                                <option value="automotive">Automotive</option>
+                                <option value="power">Power</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Domain:</label>
+                            <input type="number" id="ptpDomain" value="0" min="0" max="127">
+                        </div>
+                        <button class="btn-primary" id="applyPTP">Apply PTP Config</button>
+                    </div>
+                </div>
+
+                <!-- YAML Config Tab -->
+                <div class="tab-content" id="yaml">
+                    <h3>YAML Configuration</h3>
+                    <div class="yaml-editor">
+                        <textarea id="yamlInput" placeholder="Enter YAML configuration here...">
+# Example YAML Configuration
+ports:
+  - number: 0
+    speed: 1000
+    duplex: full
+    enabled: true
+  - number: 1
+    speed: auto
+    duplex: auto
+    enabled: true
+
+tsn:
+  cbs:
+    tc2:
+      idle_slope: 1500
+      send_slope: -98500
+    tc6:
+      idle_slope: 3500
+      send_slope: -96500
+  
+  tas:
+    cycle_time: 200000
+    gate_control_list:
+      - gate_states: 0xFF
+        time_interval: 50000
+      - gate_states: 0x01
+        time_interval: 150000
+  
+  ptp:
+    profile: automotive
+    domain: 0
+    priority1: 128
+    priority2: 128
+                        </textarea>
+                    </div>
+                    <div class="yaml-actions">
+                        <button class="btn-secondary" id="validateYaml">Validate</button>
+                        <button class="btn-secondary" id="loadYaml">Load from File</button>
+                        <button class="btn-primary" id="applyYaml">Apply Configuration</button>
+                    </div>
+                    <input type="file" id="yamlFileInput" accept=".yaml,.yml" style="display:none">
+                </div>
+
+                <!-- CoAP/CBOR Tab -->
+                <div class="tab-content" id="coap">
+                    <h3>CoAP/CBOR Communication</h3>
+                    
+                    <div class="coap-section">
+                        <h4>CoAP Request</h4>
+                        <div class="form-group">
+                            <label>Method:</label>
+                            <select id="coapMethod">
+                                <option value="GET">GET</option>
+                                <option value="POST">POST</option>
+                                <option value="PUT">PUT</option>
+                                <option value="DELETE">DELETE</option>
+                                <option value="FETCH">FETCH</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>URI Path:</label>
+                            <input type="text" id="coapPath" placeholder="/ietf-system:system-state/platform">
+                        </div>
+                        <div class="form-group">
+                            <label>Payload (JSON):</label>
+                            <textarea id="coapPayload" placeholder='{"key": "value"}'></textarea>
+                        </div>
+                        <button class="btn-primary" id="sendCoap">Send CoAP Request</button>
+                    </div>
+
+                    <div class="coap-section">
+                        <h4>YANG Browser</h4>
+                        <div id="yangTree" class="yang-tree">
+                            <!-- YANG tree will be populated here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Raw MUP1 Tab -->
+                <div class="tab-content" id="raw">
+                    <h3>Raw MUP1 Protocol</h3>
+                    
+                    <div class="mup1-section">
+                        <h4>Send Raw Command</h4>
+                        <div class="form-group">
+                            <label>Command Type:</label>
+                            <select id="mup1Type">
+                                <option value="p">p - Ping</option>
+                                <option value="c">c - CoAP</option>
+                                <option value="A">A - AT Command</option>
+                                <option value="T">T - Text</option>
+                                <option value="S">S - Status</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Data (Hex):</label>
+                            <input type="text" id="mup1Data" placeholder="Enter hex data (e.g., 48656C6C6F)">
+                        </div>
+                        <div class="form-group">
+                            <label>Auto Calculate Checksum:</label>
+                            <input type="checkbox" id="autoChecksum" checked>
+                        </div>
+                        <button class="btn-primary" id="sendMup1">Send MUP1 Command</button>
+                    </div>
+
+                    <div class="mup1-section">
+                        <h4>Protocol Helper</h4>
+                        <div class="protocol-info">
+                            <p><strong>MUP1 Frame Format:</strong></p>
+                            <code>&gt;TYPE[DATA]&lt;[&lt;]CHECKSUM</code>
+                            <ul>
+                                <li>SOF: &gt; (0x3E)</li>
+                                <li>TYPE: Command byte</li>
+                                <li>DATA: Escaped payload</li>
+                                <li>EOF: &lt; (0x3C, double for even-sized)</li>
+                                <li>CHECKSUM: 16-bit one's complement</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Monitor Tab -->
+                <div class="tab-content" id="monitor">
+                    <h3>Communication Monitor</h3>
+                    
+                    <div class="monitor-controls">
+                        <button class="btn-secondary" id="clearLog">Clear Log</button>
+                        <button class="btn-secondary" id="exportLog">Export Log</button>
+                        <label>
+                            <input type="checkbox" id="autoScroll" checked> Auto-scroll
+                        </label>
+                        <label>
+                            <input type="checkbox" id="showHex" checked> Show Hex
+                        </label>
+                    </div>
+
+                    <div class="monitor-log" id="logContainer">
+                        <!-- Log entries will appear here -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- Response Panel -->
+            <section class="panel">
+                <h2>Response</h2>
+                <div class="response-container">
+                    <div id="responseDisplay" class="response-display">
+                        <p class="placeholder">Response will appear here...</p>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <script src="js/mup1-protocol.js"></script>
+    <script src="js/coap-client.js"></script>
+    <script src="js/cbor-encoder.js"></script>
+    <script src="js/yaml-parser.js"></script>
+    <script src="js/serial-handler.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
